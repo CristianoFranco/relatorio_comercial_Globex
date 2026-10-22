@@ -15,7 +15,10 @@ st.set_page_config(
     layout="centered"
 )
 
-# Inicialização do estado dos responsáveis
+# Inicialização de controle de versão do formulário para garantir limpeza imediata dos campos
+if "form_version" not in st.session_state:
+    st.session_state["form_version"] = 0
+
 if "responsaveis" not in st.session_state:
     st.session_state["responsaveis"] = [
         {"nome": "", "setor": "Logística", "outro_setor": "", "telefone": "", "email": ""}
@@ -34,10 +37,13 @@ def resetar_formulario():
     st.session_state["responsaveis"] = [
         {"nome": "", "setor": "Logística", "outro_setor": "", "telefone": "", "email": ""}
     ]
-    for key in list(st.session_state.keys()):
-        if key != "responsaveis":
-            del st.session_state[key]
-    st.rerun()
+    # Incrementa a versão para forçar a recriação limpa de todos os inputs da tela
+    st.session_state["form_version"] += 1
+    keys_to_delete = [k for k in st.session_state.keys() if k not in ["responsaveis", "form_version"]]
+    for k in keys_to_delete:
+        del st.session_state[k]
+
+v = st.session_state["form_version"]
 
 # 01) Logo da Globex no cabeçalho centralizado
 col1, col2, col3 = st.columns([1, 2, 1])
@@ -53,10 +59,10 @@ st.markdown("---")
 
 # 1. DADOS DA EMPRESA
 st.subheader("1. Dados da Empresa *(Obrigatório)*")
-razao_social = st.text_input("Razão Social *", key="input_razao")
-cnpj = st.text_input("CNPJ *", placeholder="00.000.000/0001-00", key="input_cnpj")
-data_constituicao = st.date_input("Data de Constituição *", value=None, key="input_constituicao")
-ramo_atividade = st.text_input("Ramo de Atividade *", key="input_ramo")
+razao_social = st.text_input("Razão Social *", key=f"input_razao_{v}")
+cnpj = st.text_input("CNPJ *", placeholder="00.000.000/0001-00", key=f"input_cnpj_{v}")
+data_constituicao = st.date_input("Data de Constituição *", value=None, key=f"input_constituicao_{v}")
+ramo_atividade = st.text_input("Ramo de Atividade *", key=f"input_ramo_{v}")
 
 st.markdown("")
 
@@ -64,38 +70,38 @@ st.markdown("")
 st.subheader("2. Endereço Completo *(Obrigatório)*")
 col_end1, col_end2 = st.columns([3, 1])
 with col_end1:
-    rua = st.text_input("Rua *", key="input_rua")
+    rua = st.text_input("Rua *", key=f"input_rua_{v}")
 with col_end2:
-    numero = st.text_input("Número *", key="input_numero")
+    numero = st.text_input("Número *", key=f"input_numero_{v}")
     
-bairro = st.text_input("Bairro *", key="input_bairro")
+bairro = st.text_input("Bairro *", key=f"input_bairro_{v}")
 
 col_cidade, col_uf, col_cep = st.columns([2, 1, 1])
 with col_cidade:
-    cidade = st.text_input("Cidade *", key="input_cidade")
+    cidade = st.text_input("Cidade *", key=f"input_cidade_{v}")
 with col_uf:
-    uf = st.text_input("UF *", max_chars=2, key="input_uf")
+    uf = st.text_input("UF *", max_chars=2, key=f"input_uf_{v}")
 with col_cep:
-    cep = st.text_input("CEP *", placeholder="00000-000", key="input_cep")
+    cep = st.text_input("CEP *", placeholder="00000-000", key=f"input_cep_{v}")
 
 st.markdown("")
 
 # 3. INSCRIÇÕES E REGIME TRIBUTÁRIO
 st.subheader("3. Inscrições e Regime Tributário *(Obrigatório)*")
-inscricao_estadual = st.text_input("Inscrição Estadual * (ou 'Isento')", key="input_ie")
-inscricao_municipal = st.text_input("Inscrição Municipal * (ou 'Isento')", key="input_im")
+inscricao_estadual = st.text_input("Inscrição Estadual * (ou 'Isento')", key=f"input_ie_{v}")
+inscricao_municipal = st.text_input("Inscrição Municipal * (ou 'Isento')", key=f"input_im_{v}")
 
 st.markdown("**Regime Tributário da Empresa: ***")
 regime_tributario = st.radio(
     "Selecione o Regime Tributário",
     ["Simples Nacional", "Lucro Presumido", "Lucro Real", "Outro"],
     label_visibility="collapsed",
-    key="radio_regime"
+    key=f"radio_regime_{v}"
 )
 
 regime_outro = ""
 if regime_tributario == "Outro":
-    regime_outro = st.text_input("Especifique o Regime Tributário Outro *", key="input_regime_outro")
+    regime_outro = st.text_input("Especifique o Regime Tributário Outro *", key=f"input_regime_outro_{v}")
 
 st.markdown("---")
 
@@ -110,17 +116,17 @@ for i, resp in enumerate(st.session_state["responsaveis"]):
     c_r1, c_r2 = st.columns([2, 2])
     
     with c_r1:
-        st.session_state["responsaveis"][i]["nome"] = st.text_input(f"Nome completo {i+1}", value=resp["nome"], key=f"nome_{i}")
+        st.session_state["responsaveis"][i]["nome"] = st.text_input(f"Nome completo {i+1}", value=resp["nome"], key=f"nome_{v}_{i}")
     with c_r2:
         escolha_setor = st.selectbox(
             f"Setor Responsável {i+1}",
             setores_predefinidos + ["Outro (Cadastrar novo)"],
             index=setores_predefinidos.index(resp["setor"]) if resp["setor"] in setores_predefinidos else len(setores_predefinidos),
-            key=f"setor_select_{i}"
+            key=f"setor_select_{v}_{i}"
         )
         
         if escolha_setor == "Outro (Cadastrar novo)":
-            novo_setor = st.text_input(f"Especifique o novo setor {i+1}", value=resp["outro_setor"], key=f"outro_setor_{i}")
+            novo_setor = st.text_input(f"Especifique o novo setor {i+1}", value=resp["outro_setor"], key=f"outro_setor_{v}_{i}")
             st.session_state["responsaveis"][i]["setor"] = novo_setor
             st.session_state["responsaveis"][i]["outro_setor"] = novo_setor
         else:
@@ -129,12 +135,12 @@ for i, resp in enumerate(st.session_state["responsaveis"]):
 
     c_r3, c_r4 = st.columns([1, 1])
     with c_r3:
-        st.session_state["responsaveis"][i]["telefone"] = st.text_input(f"Telefone / WhatsApp {i+1}", value=resp["telefone"], key=f"tel_{i}")
+        st.session_state["responsaveis"][i]["telefone"] = st.text_input(f"Telefone / WhatsApp {i+1}", value=resp["telefone"], key=f"tel_{v}_{i}")
     with c_r4:
-        st.session_state["responsaveis"][i]["email"] = st.text_input(f"E-mail {i+1}", value=resp["email"], key=f"email_{i}")
+        st.session_state["responsaveis"][i]["email"] = st.text_input(f"E-mail {i+1}", value=resp["email"], key=f"email_{v}_{i}")
     
     if len(st.session_state["responsaveis"]) > 1:
-        st.button("🗑️ Remover este responsável", key=f"rem_{i}", on_click=remover_responsavel, args=(i,))
+        st.button("🗑️ Remover este responsável", key=f"rem_{v}_{i}", on_click=remover_responsavel, args=(i,))
     st.markdown("---")
 
 # Botão para adicionar responsável acima da data
@@ -148,7 +154,7 @@ st.info(f"📅 **Data do preenchimento:** {data_preenchimento} (Gerada automatic
 
 st.markdown("")
 
-# Botões alinhados no final: Gerar PDF (principal) e Limpar (secundário e compacto)
+# Botões alinhados no final: Gerar PDF e Limpar compactado lado a lado
 col_sub1, col_sub2 = st.columns([3, 1])
 
 with col_sub1:
