@@ -31,7 +31,6 @@ def remover_responsavel(index):
         st.session_state["responsaveis"].pop(index)
 
 def resetar_formulario():
-    # Limpa todos os dados para o cliente recomeçar ou para o próximo atendimento
     st.session_state["responsaveis"] = [
         {"nome": "", "setor": "Logística", "outro_setor": "", "telefone": "", "email": ""}
     ]
@@ -50,7 +49,7 @@ with col2:
 st.markdown("<h2 style='text-align: center; color: #0A3641;'>Ficha Cadastral de Armazenagem</h2>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: gray;'>Preencha os dados abaixo após o fechamento da proposta comercial.</p>", unsafe_allow_html=True)
 
-# Botão de Limpar Campos posicionado no topo para fácil acesso do cliente
+# Botão de Limpar Campos posicionado no topo
 col_btn1, col_btn2, col_btn3 = st.columns([2, 1, 2])
 with col_btn2:
     st.button("🧹 Limpar Campos", on_click=resetar_formulario, type="secondary", use_container_width=True)
@@ -272,4 +271,41 @@ if submitted:
                 canvas.setFillColor(colors.HexColor('#555555'))
                 
                 linha1 = "Avenida Vitoria Rossi Martini, 31"
-                linha2 = "Distrito Industrial Indaiatuba - SP - CEP: 13.347-613
+                linha2 = "Distrito Industrial Indaiatuba - SP - CEP: 13.347-613"
+                linha3 = "+55 19 3936-8520 / www.globexmultimodal.com.br"
+                
+                width, _ = A4
+                canvas.drawCentredString(width / 2.0, 45, linha1)
+                canvas.drawCentredString(width / 2.0, 33, linha2)
+                canvas.drawCentredString(width / 2.0, 21, linha3)
+                canvas.restoreState()
+
+            doc.build(story, onFirstPage=add_footer, onLaterPages=add_footer)
+            buffer.seek(0)
+            
+            st.success("🎉 Ficha gerada com sucesso! Clique abaixo para baixar:")
+            
+            st.download_button(
+                label="📥 Baixar Ficha Cadastral em PDF",
+                data=buffer,
+                file_name=f"Ficha_Cadastral_Armazenagem_{razao_social.replace(' ', '_')}.pdf",
+                mime="application/pdf",
+                type="primary",
+                on_click=resetar_formulario
+            )
+
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao gerar o arquivo PDF: {e}")
+
+# Rodapé institucional centralizado
+st.markdown("---")
+st.markdown(
+    """
+    <div style='text-align: center; color: #666666; font-size: 13px; line-height: 1.5;'>
+        <b>Avenida Vitoria Rossi Martini, 31</b><br>
+        Distrito Industrial Indaiatuba - SP - CEP: 13.347-613<br>
+        +55 19 3936-8520 / www.globexmultimodal.com.br
+    </div>
+    """,
+    unsafe_allow_html=True
+)
