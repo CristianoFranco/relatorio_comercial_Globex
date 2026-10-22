@@ -51,8 +51,10 @@ ramo_atividade = st.text_input("Ramo de Atividade *", key="input_ramo")
 
 st.markdown("")
 
-# 2. ENDEREÇO COMPLETO
+# 2. ENDEREÇO COMPLETO (Tratamento para reconhecimento de autofill do navegador)
 st.subheader("2. Endereço Completo *(Obrigatório)*")
+st.markdown("<p style='font-size: 12px; color: #666;'>* Dica: Se usar o preenchimento automático do navegador e o botão apontar campo vazio, clique brevemente em cima do campo para validar.</p>", unsafe_allow_html=True)
+
 col_end1, col_end2 = st.columns([3, 1])
 with col_end1:
     rua = st.text_input("Rua *", key="input_rua")
@@ -128,7 +130,7 @@ for i, resp in enumerate(st.session_state["responsaveis"]):
         st.button("🗑️ Remover este responsável", key=f"rem_{i}", on_click=remover_responsavel, args=(i,))
     st.markdown("---")
 
-# Botão posicionado acima da data, exatamente como solicitado
+# Botão para adicionar responsável acima da data
 st.button("➕ Adicionar Outro Responsável", on_click=adicionar_responsavel, type="secondary", use_container_width=True)
 
 st.markdown("")
@@ -195,9 +197,10 @@ if submitted:
 
             story = []
 
+            # 02) Logo ajustada no PDF sem distorção (proporção correta de largura e altura proporcionais)
             if os.path.exists("Logo.png"):
                 from reportlab.platypus import Image
-                img = Image("Logo.png", width=5 * cm, height=1.5 * cm)
+                img = Image("Logo.png", width=6 * cm, height=1.65 * cm)
                 img.hAlign = 'CENTER'
                 story.append(img)
                 story.append(Spacer(1, 10))
@@ -267,16 +270,17 @@ if submitted:
             
             st.success("🎉 PDF gerado com sucesso!")
             
+            # 01) Nome do PDF alterado para Ficha_Cadastral_Armazenagem
             st.download_button(
                 label="📥 Baixar PDF Preenchido",
                 data=buffer,
-                file_name=f"Proposta_Armazenagem_{razao_social.replace(' ', '_')}.pdf",
+                file_name=f"Ficha_Cadastral_Armazenagem_{razao_social.replace(' ', '_')}.pdf",
                 mime="application/pdf",
                 type="primary"
             )
 
         except Exception as e:
-            st.error(f"Ocorreu um erro ao gerar o arquivo PDF: {e}")
+            st.error(o := f"Ocorreu um erro ao gerar o arquivo PDF: {e}")
 
 # 02) Endereço da Globex no rodapé centralizado da página web do Streamlit
 st.markdown("---")
