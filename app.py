@@ -31,12 +31,12 @@ def remover_responsavel(index):
         st.session_state["responsaveis"].pop(index)
 
 def resetar_formulario():
-    # Limpa todos os dados para o próximo cliente sem cruzar informações
+    # Limpa todos os dados para o cliente recomeçar ou para o próximo atendimento
     st.session_state["responsaveis"] = [
         {"nome": "", "setor": "Logística", "outro_setor": "", "telefone": "", "email": ""}
     ]
     for key in list(st.session_state.keys()):
-        if key.startswith("input_") or key.startswith("radio_") or key.startswith("nome_") or key.startswith("tel_") or key.startswith("email_"):
+        if key.startswith("input_") or key.startswith("radio_") or key.startswith("nome_") or key.startswith("tel_") or key.startswith("email_") or key.startswith("setor_select_") or key.startswith("outro_setor_"):
             del st.session_state[key]
 
 # 01) Logo da Globex no cabeçalho centralizado
@@ -49,6 +49,12 @@ with col2:
 
 st.markdown("<h2 style='text-align: center; color: #0A3641;'>Ficha Cadastral de Armazenagem</h2>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: gray;'>Preencha os dados abaixo após o fechamento da proposta comercial.</p>", unsafe_allow_html=True)
+
+# Botão de Limpar Campos posicionado no topo para fácil acesso do cliente
+col_btn1, col_btn2, col_btn3 = st.columns([2, 1, 2])
+with col_btn2:
+    st.button("🧹 Limpar Campos", on_click=resetar_formulario, type="secondary", use_container_width=True)
+
 st.markdown("---")
 
 # 1. DADOS DA EMPRESA
@@ -242,11 +248,9 @@ if submitted:
             t3.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
             story.append(t3)
 
-            # Correção garantida para renderizar todos os responsáveis preenchidos no PDF
             story.append(Paragraph("4. RESPONSÁVEIS", style_subtitle))
             responsaveis_validos = [r for r in st.session_state["responsaveis"] if r["nome"].strip()]
             if not responsaveis_validos:
-                # Se nenhum foi preenchido explicitamente, pega ao menos o primeiro preenchido
                 responsaveis_validos = st.session_state["responsaveis"]
 
             for idx, resp in enumerate(responsaveis_validos):
@@ -268,42 +272,4 @@ if submitted:
                 canvas.setFillColor(colors.HexColor('#555555'))
                 
                 linha1 = "Avenida Vitoria Rossi Martini, 31"
-                linha2 = "Distrito Industrial Indaiatuba - SP - CEP: 13.347-613"
-                linha3 = "+55 19 3936-8520 / www.globexmultimodal.com.br"
-                
-                width, _ = A4
-                canvas.drawCentredString(width / 2.0, 45, linha1)
-                canvas.drawCentredString(width / 2.0, 33, linha2)
-                canvas.drawCentredString(width / 2.0, 21, linha3)
-                canvas.restoreState()
-
-            doc.build(story, onFirstPage=add_footer, onLaterPages=add_footer)
-            buffer.seek(0)
-            
-            st.success("🎉 Ficha gerada com sucesso! Clique abaixo para baixar:")
-            
-            # Botão de download direto
-            st.download_button(
-                label="📥 Baixar Ficha Cadastral em PDF",
-                data=buffer,
-                file_name=f"Ficha_Cadastral_Armazenagem_{razao_social.replace(' ', '_')}.pdf",
-                mime="application/pdf",
-                type="primary",
-                on_click=resetar_formulario # Limpa a tela após o clique de download
-            )
-
-        except Exception as e:
-            st.error(f"Ocorreu um erro ao gerar o arquivo PDF: {e}")
-
-# Rodapé institucional centralizado
-st.markdown("---")
-st.markdown(
-    """
-    <div style='text-align: center; color: #666666; font-size: 13px; line-height: 1.5;'>
-        <b>Avenida Vitoria Rossi Martini, 31</b><br>
-        Distrito Industrial Indaiatuba - SP - CEP: 13.347-613<br>
-        +55 19 3936-8520 / www.globexmultimodal.com.br
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+                linha2 = "Distrito Industrial Indaiatuba - SP - CEP: 13.347-613
