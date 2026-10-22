@@ -31,7 +31,6 @@ def remover_responsavel(index):
         st.session_state["responsaveis"].pop(index)
 
 def resetar_formulario():
-    # Limpa os dados armazenados
     st.session_state["responsaveis"] = [
         {"nome": "", "setor": "Logística", "outro_setor": "", "telefone": "", "email": ""}
     ]
@@ -257,4 +256,57 @@ if submitted:
             for idx, resp in enumerate(responsaveis_validos):
                 nome_resp = resp['nome'] if resp['nome'].strip() else "Não informado"
                 data_resp = [
-                    [Paragraph(f"<b>Responsável {idx+1}:</b> {nome_resp}", style_body), Paragraph(f"<b>Setor
+                    [Paragraph(f"<b>Responsável {idx+1}:</b> {nome_resp}", style_body), Paragraph(f"<b>Setor:</b> {resp['setor']}", style_body)],
+                    [Paragraph(f"<b>Telefone/WhatsApp:</b> {resp['telefone']}", style_body), Paragraph(f"<b>E-mail:</b> {resp['email']}", style_body)]
+                ]
+                t_resp = Table(data_resp, colWidths=[9 * cm, 8 * cm])
+                t_resp.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('BOTTOMPADDING', (0,0), (-1,-1), 6)]))
+                story.append(t_resp)
+
+            story.append(Paragraph("5. CONFIRMAÇÃO", style_subtitle))
+            story.append(Paragraph(f"<b>Data e Hora do Preenchimento:</b> {data_preenchimento}", style_body))
+
+            def add_footer(canvas, doc):
+                canvas.saveState()
+                canvas.setFont('Helvetica', 8)
+                canvas.setFillColor(colors.HexColor('#555555'))
+                
+                linha1 = "Avenida Vitoria Rossi Martini, 31"
+                linha2 = "Distrito Industrial Indaiatuba - SP - CEP: 13.347-613"
+                linha3 = "+55 19 3936-8520 / www.globexmultimodal.com.br"
+                
+                width, _ = A4
+                canvas.drawCentredString(width / 2.0, 45, linha1)
+                canvas.drawCentredString(width / 2.0, 33, linha2)
+                canvas.drawCentredString(width / 2.0, 21, linha3)
+                canvas.restoreState()
+
+            doc.build(story, onFirstPage=add_footer, onLaterPages=add_footer)
+            buffer.seek(0)
+            
+            st.success("🎉 Ficha gerada com sucesso! Clique abaixo para baixar:")
+            
+            st.download_button(
+                label="📥 Baixar Ficha Cadastral em PDF",
+                data=buffer,
+                file_name=f"Ficha_Cadastral_Armazenagem_{razao_social.replace(' ', '_')}.pdf",
+                mime="application/pdf",
+                type="primary",
+                on_click=resetar_formulario
+            )
+
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao gerar o arquivo PDF: {e}")
+
+# Rodapé institucional centralizado
+st.markdown("---")
+st.markdown(
+    """
+    <div style='text-align: center; color: #666666; font-size: 13px; line-height: 1.5;'>
+        <b>Avenida Vitoria Rossi Martini, 31</b><br>
+        Distrito Industrial Indaiatuba - SP - CEP: 13.347-613<br>
+        +55 19 3936-8520 / www.globexmultimodal.com.br
+    </div>
+    """,
+    unsafe_allow_html=True
+)
