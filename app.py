@@ -27,7 +27,22 @@ st.markdown("<h2 style='text-align: center; color: #0A3641;'>Ficha Cadastral de 
 st.markdown("<p style='text-align: center; color: gray;'>Preencha os dados abaixo após o fechamento da proposta comercial.</p>", unsafe_allow_html=True)
 st.markdown("---")
 
-# Formulário com Streamlit (os dados ficam salvos no estado da tela em caso de falha - Requisito 04)
+# Inicializar a lista de responsáveis no session_state
+if "responsaveis" not in st.session_state:
+    st.session_state["responsaveis"] = [
+        {"nome": "", "setor": "Logística", "outro_setor": "", "telefone": "", "email": ""}
+    ]
+
+def adicionar_responsavel():
+    st.session_state["responsaveis"].append(
+        {"nome": "", "setor": "Logística", "outro_setor": "", "telefone": "", "email": ""}
+    )
+
+def remover_responsavel(index):
+    if len(st.session_state["responsaveis"]) > 1:
+        st.session_state["responsaveis"].pop(index)
+
+# Formulário principal de preenchimento
 with st.form("form_globex"):
     
     # 1. DADOS DA EMPRESA
@@ -75,21 +90,11 @@ with st.form("form_globex"):
     if regime_tributario == "Outro":
         regime_outro = st.text_input("Especifique o Regime Tributário Outro *")
 
-    st.markdown("")
-
-    # 4. RESPONSÁVEIS (Inclusão Dinâmica de Múltiplos Responsáveis)
+    st.markdown("---")
+    
+    # 4. RESPONSÁVEIS (Campos dentro do formulário guardados por chaves no session_state)
     st.subheader("4. Responsáveis")
-    st.markdown("Adicione os responsáveis da empresa por setor.")
-
-    if "responsaveis" not in st.session_state:
-        st.session_state["responsaveis"] = [
-            {"nome": "", "setor": "Logística", "outro_setor": "", "telefone": "", "email": ""}
-        ]
-
-    def adicionar_responsavel():
-        st.session_state["responsaveis"].append(
-            {"nome": "", "setor": "Logística", "outro_setor": "", "telefone": "", "email": ""}
-        )
+    st.markdown("Preencha os dados dos responsáveis da empresa por setor.")
 
     setores_predefinidos = ["Logística", "Financeiro", "Operação", "Compras", "Responsável Técnico"]
 
@@ -98,17 +103,17 @@ with st.form("form_globex"):
         c_r1, c_r2 = st.columns([2, 2])
         
         with c_r1:
-            st.session_state["responsaveis"][i]["nome"] = st.text_input(f"Nome completo", value=resp["nome"], key=f"nome_{i}")
+            st.session_state["responsaveis"][i]["nome"] = st.text_input(f"Nome completo {i+1}", value=resp["nome"], key=f"nome_{i}")
         with c_r2:
             escolha_setor = st.selectbox(
-                f"Setor Responsável",
+                f"Setor Responsável {i+1}",
                 setores_predefinidos + ["Outro (Cadastrar novo)"],
                 index=setores_predefinidos.index(resp["setor"]) if resp["setor"] in setores_predefinidos else len(setores_predefinidos),
                 key=f"setor_select_{i}"
             )
             
             if escolha_setor == "Outro (Cadastrar novo)":
-                novo_setor = st.text_input(f"Especifique o novo setor", value=resp["outro_setor"], key=f"outro_setor_{i}")
+                novo_setor = st.text_input(f"Especifique o novo setor {i+1}", value=resp["outro_setor"], key=f"outro_setor_{i}")
                 st.session_state["responsaveis"][i]["setor"] = novo_setor
                 st.session_state["responsaveis"][i]["outro_setor"] = novo_setor
             else:
@@ -117,12 +122,10 @@ with st.form("form_globex"):
 
         c_r3, c_r4 = st.columns([1, 1])
         with c_r3:
-            st.session_state["responsaveis"][i]["telefone"] = st.text_input(f"Telefone / WhatsApp", value=resp["telefone"], key=f"tel_{i}")
+            st.session_state["responsaveis"][i]["telefone"] = st.text_input(f"Telefone / WhatsApp {i+1}", value=resp["telefone"], key=f"tel_{i}")
         with c_r4:
-            st.session_state["responsaveis"][i]["email"] = st.text_input(f"E-mail", value=resp["email"], key=f"email_{i}")
+            st.session_state["responsaveis"][i]["email"] = st.text_input(f"E-mail {i+1}", value=resp["email"], key=f"email_{i}")
         st.markdown("---")
-
-    st.button("➕ Adicionar Outro Responsável", on_click=adicionar_responsavel, type="secondary")
 
     # 5. CONFIRMAÇÃO (Data automática)
     data_preenchimento = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -130,7 +133,11 @@ with st.form("form_globex"):
 
     st.markdown("")
     
+    # 03) Botão de Geração do PDF dentro do formulário
     submitted = st.form_submit_button("Gerar PDF da Proposta", type="primary", use_container_width=True)
+
+# Botão externo para adicionar responsáveis com segurança (fora do st.form)
+st.button("➕ Adicionar Outro Responsável", on_click=adicionar_responsavel, type="secondary", use_container_width=True)
 
 if submitted:
     erros = []
@@ -145,6 +152,7 @@ if submitted:
 
     if erros:
         st.error(f"⚠️ Preencha os seguintes campos obrigatórios antes de gerar o PDF: {', '.join(erros)}.")
+        # Requisito 04: Os dados inseridos não são apagados da tela em caso de erro.
     else:
         try:
             buffer = io.BytesIO()
@@ -268,6 +276,7 @@ if submitted:
         except Exception as e:
             st.error(f"Ocorreu um erro ao gerar o arquivo PDF: {e}")
 
+# 02) Endereço da Globex no rodapé centralizado da página web do Streamlit
 st.markdown("---")
 st.markdown(
     """
