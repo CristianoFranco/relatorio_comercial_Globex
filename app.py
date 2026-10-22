@@ -15,19 +15,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# 01) Logo da Globex no cabeçalho centralizado
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    if os.path.exists("Logo.png"):
-        st.image("Logo.png", use_container_width=True)
-    else:
-        st.warning("⚠️ Ficheiro 'Logo.png' não encontrado na pasta do projeto.")
-
-st.markdown("<h2 style='text-align: center; color: #0A3641;'>Ficha Cadastral de Armazenagem</h2>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: gray;'>Preencha os dados abaixo após o fechamento da proposta comercial.</p>", unsafe_allow_html=True)
-st.markdown("---")
-
-# Inicializar a lista de responsáveis no session_state
+# Inicialização segura do session_state isolado por sessão de cada cliente
 if "responsaveis" not in st.session_state:
     st.session_state["responsaveis"] = [
         {"nome": "", "setor": "Logística", "outro_setor": "", "telefone": "", "email": ""}
@@ -42,6 +30,27 @@ def remover_responsavel(index):
     if len(st.session_state["responsaveis"]) > 1:
         st.session_state["responsaveis"].pop(index)
 
+def resetar_formulario():
+    # Limpa todos os dados para o próximo cliente sem cruzar informações
+    st.session_state["responsaveis"] = [
+        {"nome": "", "setor": "Logística", "outro_setor": "", "telefone": "", "email": ""}
+    ]
+    for key in list(st.session_state.keys()):
+        if key.startswith("input_") or key.startswith("radio_") or key.startswith("nome_") or key.startswith("tel_") or key.startswith("email_"):
+            del st.session_state[key]
+
+# 01) Logo da Globex no cabeçalho centralizado
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    if os.path.exists("Logo.png"):
+        st.image("Logo.png", use_container_width=True)
+    else:
+        st.warning("⚠️ Ficheiro 'Logo.png' não encontrado na pasta do projeto.")
+
+st.markdown("<h2 style='text-align: center; color: #0A3641;'>Ficha Cadastral de Armazenagem</h2>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: gray;'>Preencha os dados abaixo após o fechamento da proposta comercial.</p>", unsafe_allow_html=True)
+st.markdown("---")
+
 # 1. DADOS DA EMPRESA
 st.subheader("1. Dados da Empresa *(Obrigatório)*")
 razao_social = st.text_input("Razão Social *", key="input_razao")
@@ -51,10 +60,8 @@ ramo_atividade = st.text_input("Ramo de Atividade *", key="input_ramo")
 
 st.markdown("")
 
-# 2. ENDEREÇO COMPLETO (Tratamento para reconhecimento de autofill do navegador)
+# 2. ENDEREÇO COMPLETO
 st.subheader("2. Endereço Completo *(Obrigatório)*")
-st.markdown("<p style='font-size: 12px; color: #666;'>* Dica: Se usar o preenchimento automático do navegador e o botão apontar campo vazio, clique brevemente em cima do campo para validar.</p>", unsafe_allow_html=True)
-
 col_end1, col_end2 = st.columns([3, 1])
 with col_end1:
     rua = st.text_input("Rua *", key="input_rua")
@@ -142,7 +149,7 @@ st.info(f"📅 **Data do preenchimento:** {data_preenchimento} (Gerada automatic
 st.markdown("")
 
 # Botão de Geração do PDF
-submitted = st.button("Gerar PDF da Proposta", type="primary", use_container_width=True)
+submitted = st.button("Gerar Ficha Cadastral e Baixar PDF", type="primary", use_container_width=True)
 
 if submitted:
     erros = []
@@ -197,7 +204,6 @@ if submitted:
 
             story = []
 
-            # 02) Logo ajustada no PDF sem distorção (proporção correta de largura e altura proporcionais)
             if os.path.exists("Logo.png"):
                 from reportlab.platypus import Image
                 img = Image("Logo.png", width=6 * cm, height=1.65 * cm)
@@ -236,16 +242,22 @@ if submitted:
             t3.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
             story.append(t3)
 
+            # Correção garantida para renderizar todos os responsáveis preenchidos no PDF
             story.append(Paragraph("4. RESPONSÁVEIS", style_subtitle))
-            for idx, resp in enumerate(st.session_state["responsaveis"]):
-                if resp["nome"].strip():
-                    data_resp = [
-                        [Paragraph(f"<b>Responsável {idx+1}:</b> {resp['nome']}", style_body), Paragraph(f"<b>Setor:</b> {resp['setor']}", style_body)],
-                        [Paragraph(f"<b>Telefone/WhatsApp:</b> {resp['telefone']}", style_body), Paragraph(f"<b>E-mail:</b> {resp['email']}", style_body)]
-                    ]
-                    t_resp = Table(data_resp, colWidths=[9 * cm, 8 * cm])
-                    t_resp.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('BOTTOMPADDING', (0,0), (-1,-1), 6)]))
-                    story.append(t_resp)
+            responsaveis_validos = [r for r in st.session_state["responsaveis"] if r["nome"].strip()]
+            if not responsaveis_validos:
+                # Se nenhum foi preenchido explicitamente, pega ao menos o primeiro preenchido
+                responsaveis_validos = st.session_state["responsaveis"]
+
+            for idx, resp in enumerate(responsaveis_validos):
+                nome_resp = resp['nome'] if resp['nome'].strip() else "Não informado"
+                data_resp = [
+                    [Paragraph(f"<b>Responsável {idx+1}:</b> {nome_resp}", style_body), Paragraph(f"<b>Setor:</b> {resp['setor']}", style_body)],
+                    [Paragraph(f"<b>Telefone/WhatsApp:</b> {resp['telefone']}", style_body), Paragraph(f"<b>E-mail:</b> {resp['email']}", style_body)]
+                ]
+                t_resp = Table(data_resp, colWidths=[9 * cm, 8 * cm])
+                t_resp.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('BOTTOMPADDING', (0,0), (-1,-1), 6)]))
+                story.append(t_resp)
 
             story.append(Paragraph("5. CONFIRMAÇÃO", style_subtitle))
             story.append(Paragraph(f"<b>Data e Hora do Preenchimento:</b> {data_preenchimento}", style_body))
@@ -268,21 +280,22 @@ if submitted:
             doc.build(story, onFirstPage=add_footer, onLaterPages=add_footer)
             buffer.seek(0)
             
-            st.success("🎉 PDF gerado com sucesso!")
+            st.success("🎉 Ficha gerada com sucesso! Clique abaixo para baixar:")
             
-            # 01) Nome do PDF alterado para Ficha_Cadastral_Armazenagem
+            # Botão de download direto
             st.download_button(
-                label="📥 Baixar PDF Preenchido",
+                label="📥 Baixar Ficha Cadastral em PDF",
                 data=buffer,
                 file_name=f"Ficha_Cadastral_Armazenagem_{razao_social.replace(' ', '_')}.pdf",
                 mime="application/pdf",
-                type="primary"
+                type="primary",
+                on_click=resetar_formulario # Limpa a tela após o clique de download
             )
 
         except Exception as e:
-            st.error(o := f"Ocorreu um erro ao gerar o arquivo PDF: {e}")
+            st.error(f"Ocorreu um erro ao gerar o arquivo PDF: {e}")
 
-# 02) Endereço da Globex no rodapé centralizado da página web do Streamlit
+# Rodapé institucional centralizado
 st.markdown("---")
 st.markdown(
     """
