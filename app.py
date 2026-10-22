@@ -223,4 +223,70 @@ if submitted:
             t2.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
             story.append(t2)
 
-            story.append(Paragraph("3. INSCRIÇÕES E REGIME T
+            story.append(Paragraph("3. INSCRIÇÕES E REGIME TRIBUTÁRIO", style_subtitle))
+            regime_final = regime_tributario if regime_tributario != "Outro" else f"Outro: {regime_outro}"
+            data_tribut = [
+                [Paragraph(f"<b>Inscrição Estadual:</b> {inscricao_estadual}", style_body), Paragraph(f"<b>Inscrição Municipal:</b> {inscricao_municipal}", style_body)],
+                [Paragraph(f"<b>Regime Tributário:</b> {regime_final}", style_body), Paragraph("", style_body)]
+            ]
+            t3 = Table(data_tribut, colWidths=[9 * cm, 8 * cm])
+            t3.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
+            story.append(t3)
+
+            story.append(Paragraph("4. RESPONSÁVEIS", style_subtitle))
+            for idx, resp in enumerate(st.session_state["responsaveis"]):
+                if resp["nome"].strip():
+                    data_resp = [
+                        [Paragraph(f"<b>Responsável {idx+1}:</b> {resp['nome']}", style_body), Paragraph(f"<b>Setor:</b> {resp['setor']}", style_body)],
+                        [Paragraph(f"<b>Telefone/WhatsApp:</b> {resp['telefone']}", style_body), Paragraph(f"<b>E-mail:</b> {resp['email']}", style_body)]
+                    ]
+                    t_resp = Table(data_resp, colWidths=[9 * cm, 8 * cm])
+                    t_resp.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('BOTTOMPADDING', (0,0), (-1,-1), 6)]))
+                    story.append(t_resp)
+
+            story.append(Paragraph("5. CONFIRMAÇÃO", style_subtitle))
+            story.append(Paragraph(f"<b>Data e Hora do Preenchimento:</b> {data_preenchimento}", style_body))
+
+            def add_footer(canvas, doc):
+                canvas.saveState()
+                canvas.setFont('Helvetica', 8)
+                canvas.setFillColor(colors.HexColor('#555555'))
+                
+                linha1 = "Avenida Vitoria Rossi Martini, 31"
+                linha2 = "Distrito Industrial Indaiatuba - SP - CEP: 13.347-613"
+                linha3 = "+55 19 3936-8520 / www.globexmultimodal.com.br"
+                
+                width, _ = A4
+                canvas.drawCentredString(width / 2.0, 45, linha1)
+                canvas.drawCentredString(width / 2.0, 33, linha2)
+                canvas.drawCentredString(width / 2.0, 21, linha3)
+                canvas.restoreState()
+
+            doc.build(story, onFirstPage=add_footer, onLaterPages=add_footer)
+            buffer.seek(0)
+            
+            st.success("🎉 PDF gerado com sucesso!")
+            
+            st.download_button(
+                label="📥 Baixar PDF Preenchido",
+                data=buffer,
+                file_name=f"Proposta_Armazenagem_{razao_social.replace(' ', '_')}.pdf",
+                mime="application/pdf",
+                type="primary"
+            )
+
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao gerar o arquivo PDF: {e}")
+
+# 02) Endereço da Globex no rodapé centralizado da página web do Streamlit
+st.markdown("---")
+st.markdown(
+    """
+    <div style='text-align: center; color: #666666; font-size: 13px; line-height: 1.5;'>
+        <b>Avenida Vitoria Rossi Martini, 31</b><br>
+        Distrito Industrial Indaiatuba - SP - CEP: 13.347-613<br>
+        +55 19 3936-8520 / www.globexmultimodal.com.br
+    </div>
+    """,
+    unsafe_allow_html=True
+)
