@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 import io
 import os
 import streamlit as st
@@ -37,11 +37,11 @@ def resetar_formulario():
     st.session_state["responsaveis"] = [
         {"nome": "", "setor": "Logística", "outro_setor": "", "telefone": "", "email": ""}
     ]
-    # Incrementa a versão para forçar a recriação limpa de todos os inputs da tela
     st.session_state["form_version"] += 1
     keys_to_delete = [k for k in st.session_state.keys() if k not in ["responsaveis", "form_version"]]
     for k in keys_to_delete:
         del st.session_state[k]
+    st.rerun()
 
 v = st.session_state["form_version"]
 
@@ -61,7 +61,16 @@ st.markdown("---")
 st.subheader("1. Dados da Empresa *(Obrigatório)*")
 razao_social = st.text_input("Razão Social *", key=f"input_razao_{v}")
 cnpj = st.text_input("CNPJ *", placeholder="00.000.000/0001-00", key=f"input_cnpj_{v}")
-data_constituicao = st.date_input("Data de Constituição *", value=None, key=f"input_constituicao_{v}")
+
+# Ajuste: min_value configurado para 1900 permitindo datas de constituição passadas ilimitadas
+data_constituicao = st.date_input(
+    "Data de Constituição *", 
+    value=None, 
+    min_value=date(1900, 1, 1), 
+    max_value=datetime.now().date(),
+    key=f"input_constituicao_{v}"
+)
+
 ramo_atividade = st.text_input("Ramo de Atividade *", key=f"input_ramo_{v}")
 
 st.markdown("")
